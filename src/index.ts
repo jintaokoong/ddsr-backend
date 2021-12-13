@@ -2,6 +2,8 @@ import express, { json, Router } from 'express';
 import { connect } from 'mongoose';
 import { SongRequest } from './interfaces/song-request';
 import cors from 'cors';
+import lodash from 'lodash';
+import { format } from 'date-fns';
 import srMapper from './mapper/sr-mapper';
 
 const app = express();
@@ -12,8 +14,15 @@ app.use(json());
 const router = Router();
 router.get('/request', async (_, res) => {
   const docs = await SongRequest.find({});
-  const projected = docs.map((d) => d.toObject()).map((sr) => srMapper.map(sr));
-  return res.send(projected);
+  const objs = docs.map((d) => d.toObject());
+  const grouped = lodash.groupBy(objs, (o) => {
+    return format(o.createdAt, 'yyyy-MM-dd');
+  });
+  let result: Record<string, any> = {};
+  for (const k of Object.keys(grouped)) {
+    result[k] = grouped[k].map((sr) => srMapper.map(sr));
+  }
+  return res.send(result);
 });
 
 router.post('/request', async (req, res) => {
