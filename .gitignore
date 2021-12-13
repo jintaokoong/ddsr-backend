@@ -92,7 +92,7 @@ out
 dist
 
 # build folder
-build/**
+build
 
 # Gatsby files
 .cache/
