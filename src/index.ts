@@ -5,6 +5,7 @@ import cors from 'cors';
 import lodash from 'lodash';
 import { format } from 'date-fns';
 import srMapper from './mapper/sr-mapper';
+import objectUtils from './utils/object-utils';
 
 const app = express();
 
@@ -18,11 +19,14 @@ router.get('/request', async (_, res) => {
   const grouped = lodash.groupBy(objs, (o) => {
     return format(o.createdAt, 'yyyy-MM-dd');
   });
-  let result: Record<string, any> = {};
-  for (const k of Object.keys(grouped)) {
-    result[k] = grouped[k].map((sr) => srMapper.map(sr));
-  }
-  return res.send(result);
+  const mapped = objectUtils.getKeys(grouped).reduce(
+    (pv, cv) => ({
+      ...pv,
+      [cv]: grouped[cv].map((sr) => srMapper.map(sr)),
+    }),
+    {}
+  );
+  return res.send(mapped);
 });
 
 router.post('/request', async (req, res) => {
