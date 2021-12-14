@@ -6,14 +6,25 @@ import lodash from 'lodash';
 import { format, isAfter, isBefore, parse } from 'date-fns';
 import srMapper from './mapper/sr-mapper';
 import objectUtils from './utils/object-utils';
+import { Config } from './interfaces/config';
 
 const app = express();
 
 app.use(cors());
 app.use(json());
 
-const router = Router();
-router.get('/request', async (_, res) => {
+const requestRouter = Router();
+requestRouter.use(async (req, res, next) => {
+  if (req.method !== 'POST') {
+    return next();
+  }
+  const accepting = await Config.findOne({ name: 'accepting' });
+  if (accepting && accepting.value === 'true') {
+    return next();
+  }
+  return res.status(400).send({ message: 'currently not accpeting' });
+});
+requestRouter.get('/request', async (_, res) => {
   const docs = await SongRequest.find({});
   const objs = docs.map((d) => d.toObject());
   const grouped = lodash.groupBy(objs, (o) => {
@@ -36,7 +47,7 @@ router.get('/request', async (_, res) => {
   return res.send(mapped);
 });
 
-router.post('/request', async (req, res) => {
+requestRouter.post('/request', async (req, res) => {
   const { name } = req.body;
   const errors = [];
   if (name === undefined) {
@@ -56,7 +67,7 @@ router.post('/request', async (req, res) => {
   return res.send(srMapper.map(out.toObject()));
 });
 
-router.put('/request/:id', async (req, res) => {
+requestRouter.put('/request/:id', async (req, res) => {
   let doc;
   try {
     doc = await SongRequest.findById(req.params.id);
@@ -76,9 +87,42 @@ router.put('/request/:id', async (req, res) => {
   }
 });
 
-app.get('/', (_, res) => res.status(200).send({ message: 'server is up!' }));
-app.use('/api', router);
+const configRouter = Router();
 
-connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@10.144.72.52/ddsrdb').then(() =>
-  app.listen(4000, () => console.log('listening on port 4000'))
-);
+configRouter.get('/config', async (_, res) => {
+  const accepting = await Config.findOne({ name: 'accepting' });
+  return res.send({
+    accepting: accepting?.value,
+  });
+});
+configRouter.post('/config/toggle', async (_, res) => {
+  const accepting = await Config.findOne({ name: 'accepting' });
+  if (!accepting) {
+    const doc = new Config({
+      name: 'accepting',
+      value: 'false',
+    });
+    return res.status(200).send();
+  }
+  accepting.value = accepting.value === 'true' ? 'false' : 'true';
+  await accepting.save();
+  return res.send({
+    accepting: accepting.value,
+  });
+});
+
+app.get('/', (_, res) => res.status(200).send({ message: 'server is up!' }));
+app.use('/api', configRouter, requestRouter);
+
+connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@10.144.72.52/ddsrdb')
+  .then(async () => {
+    const accepting = await Config.findOne({ name: 'accepting' });
+    if (!accepting) {
+      const doc = new Config({
+        name: 'accepting',
+        value: 'false',
+      });
+      await doc.save();
+    }
+  })
+  .then(() => app.listen(4000, () => console.log('listening on port 4000')));
