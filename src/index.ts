@@ -3,7 +3,7 @@ import { connect } from 'mongoose';
 import { SongRequest } from './interfaces/song-request';
 import cors from 'cors';
 import lodash from 'lodash';
-import { format } from 'date-fns';
+import { format, isAfter, isBefore, parse } from 'date-fns';
 import srMapper from './mapper/sr-mapper';
 import objectUtils from './utils/object-utils';
 
@@ -19,13 +19,20 @@ router.get('/request', async (_, res) => {
   const grouped = lodash.groupBy(objs, (o) => {
     return format(o.createdAt, 'yyyy-MM-dd');
   });
-  const mapped = objectUtils.getKeys(grouped).reduce(
-    (pv, cv) => ({
-      ...pv,
-      [cv]: grouped[cv].map((sr) => srMapper.map(sr)),
-    }),
-    {}
-  );
+  const mapped = objectUtils
+    .getKeys(grouped)
+    .sort((a, b) => {
+      const f = parse(a as string, 'yyyy-MM-dd', new Date());
+      const s = parse(b as string, 'yyyy-MM-dd', new Date());
+      return isBefore(f, s) ? 1 : -1;
+    })
+    .reduce(
+      (pv, cv) => ({
+        ...pv,
+        [cv]: grouped[cv].map((sr) => srMapper.map(sr)),
+      }),
+      {}
+    );
   return res.send(mapped);
 });
 
