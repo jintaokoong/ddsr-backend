@@ -3,7 +3,7 @@ import { connect } from 'mongoose';
 import { SongRequest } from './interfaces/song-request';
 import cors from 'cors';
 import lodash from 'lodash';
-import { format, isAfter, isBefore, parse } from 'date-fns';
+import { format, addDays, isBefore, parse } from 'date-fns';
 import srMapper from './mapper/sr-mapper';
 import objectUtils from './utils/object-utils';
 import { Config } from './interfaces/config';
@@ -25,7 +25,8 @@ requestRouter.use(async (req, res, next) => {
   return res.status(400).send({ message: 'currently not accpeting' });
 });
 requestRouter.get('/request', async (_, res) => {
-  const docs = await SongRequest.find({});
+  const lastWeek = addDays(new Date(), -7);
+  const docs = await SongRequest.find({ createdAt: { $gte: lastWeek }});
   const objs = docs.map((d) => d.toObject());
   const grouped = lodash.groupBy(objs, (o) => {
     return format(o.createdAt, 'yyyy-MM-dd');
