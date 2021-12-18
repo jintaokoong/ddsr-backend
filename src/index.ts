@@ -25,6 +25,23 @@ requestRouter.use(async (req, res, next) => {
   }
   return res.status(400).send({ message: 'currently not accpeting' });
 });
+requestRouter.delete('/request/:id', async (req, res) => {
+  if (!req.params.id) {
+    return res.status(404).send();
+  }
+  const doc = await SongRequest.findOne({ _id: req.params.id });
+  if (!doc) {
+    return res.status(404).send();
+  }
+
+  try {
+    await doc.remove();
+    return res.status(200).send();
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send();
+  }
+});
 requestRouter.get('/request', async (_, res) => {
   const lastWeek = addDays(new Date(), -7);
   const docs = await SongRequest.find({ createdAt: { $gte: lastWeek } });
