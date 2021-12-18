@@ -3,7 +3,8 @@ import { connect } from 'mongoose';
 import { SongRequest } from './interfaces/song-request';
 import cors from 'cors';
 import lodash from 'lodash';
-import { format, addDays, isBefore, parse } from 'date-fns';
+import { addDays, isBefore, parse } from 'date-fns';
+import { format, utcToZonedTime } from 'date-fns-tz';
 import srMapper from './mapper/sr-mapper';
 import objectUtils from './utils/object-utils';
 import { Config } from './interfaces/config';
@@ -26,10 +27,11 @@ requestRouter.use(async (req, res, next) => {
 });
 requestRouter.get('/request', async (_, res) => {
   const lastWeek = addDays(new Date(), -7);
-  const docs = await SongRequest.find({ createdAt: { $gte: lastWeek }});
+  const docs = await SongRequest.find({ createdAt: { $gte: lastWeek } });
   const objs = docs.map((d) => d.toObject());
   const grouped = lodash.groupBy(objs, (o) => {
-    return format(o.createdAt, 'yyyy-MM-dd');
+    const time = utcToZonedTime(o.createdAt, 'Asia/Kuala_Lumpur');
+    return format(time, 'yyyy-MM-dd');
   });
   const mapped = objectUtils
     .getKeys(grouped)
