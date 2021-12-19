@@ -134,7 +134,7 @@ configRouter.post('/config/toggle', async (_, res) => {
 app.get('/', (_, res) => res.status(200).send({ message: 'server is up!' }));
 app.use('/api', configRouter, requestRouter);
 
-connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@10.144.72.52/ddsrdb')
+connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@10.144.211.192/ddsrdb')
   .then(async () => {
     const accepting = await Config.findOne({ name: 'accepting' });
     if (!accepting) {
