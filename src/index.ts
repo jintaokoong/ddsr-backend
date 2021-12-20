@@ -1,13 +1,13 @@
-import express, { json, Router } from 'express';
-import { connect } from 'mongoose';
-import { SongRequest } from './interfaces/song-request';
 import cors from 'cors';
-import lodash from 'lodash';
 import { addDays, isBefore, parse } from 'date-fns';
 import { format, utcToZonedTime } from 'date-fns-tz';
+import express, { json, Router } from 'express';
+import lodash from 'lodash';
+import { connect } from 'mongoose';
+import { Config } from './interfaces/config';
+import { SongRequest } from './interfaces/song-request';
 import srMapper from './mapper/sr-mapper';
 import objectUtils from './utils/object-utils';
-import { Config } from './interfaces/config';
 
 const app = express();
 
@@ -134,7 +134,7 @@ configRouter.post('/config/toggle', async (_, res) => {
 app.get('/', (_, res) => res.status(200).send({ message: 'server is up!' }));
 app.use('/api', configRouter, requestRouter);
 
-connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@10.144.211.192/ddsrdb')
+connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@localhost/ddsrdb')
   .then(async () => {
     const accepting = await Config.findOne({ name: 'accepting' });
     if (!accepting) {
