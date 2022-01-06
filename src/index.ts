@@ -1,13 +1,20 @@
 import cors from 'cors';
+import dotenv from 'dotenv';
 import { addDays, isBefore, parse } from 'date-fns';
 import { format, utcToZonedTime } from 'date-fns-tz';
 import express, { json, Router } from 'express';
 import lodash from 'lodash';
+import * as zmq from 'zeromq';
 import { connect } from 'mongoose';
 import { Config } from './interfaces/config';
 import { SongRequest } from './interfaces/song-request';
 import srMapper from './mapper/sr-mapper';
 import objectUtils from './utils/object-utils';
+
+dotenv.config();
+const dbHost = process.env.DB_HOST ?? 'localhost';
+
+const sock = new zmq.Push();
 
 const app = express();
 
@@ -134,8 +141,9 @@ configRouter.post('/config/toggle', async (_, res) => {
 app.get('/', (_, res) => res.status(200).send({ message: 'server is up!' }));
 app.use('/api', configRouter, requestRouter);
 
-connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@localhost/ddsrdb')
+connect(`mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@${dbHost}/ddsrdb`)
   .then(async () => {
+    console.log('connected to mongodb');
     const accepting = await Config.findOne({ name: 'accepting' });
     if (!accepting) {
       const doc = new Config({
@@ -145,4 +153,9 @@ connect('mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@localhost/ddsrdb')
       await doc.save();
     }
   })
-  .then(() => app.listen(4000, () => console.log('listening on port 4000')));
+  .then(() =>
+    sock.bind('tcp://127.0.0.1:4200').then(() => {
+      console.log('bound to port 4200');
+      return app.listen(4000, () => console.log('listening on port 4000'));
+    })
+  );

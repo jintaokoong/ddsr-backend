@@ -7,6 +7,7 @@ specifiers:
   cors: ^2.8.5
   date-fns: ^2.27.0
   date-fns-tz: ^1.1.7
+  dotenv: ^10.0.0
   express: ^4.17.1
   lodash: ^4.17.21
   mongoose: ^6.1.1
@@ -14,14 +15,17 @@ specifiers:
   rimraf: ^3.0.2
   ts-node-dev: ^1.1.8
   typescript: ^4.5.3
+  zeromq: 6.0.0-beta.6
 
 dependencies:
   cors: 2.8.5
   date-fns: 2.27.0
   date-fns-tz: 1.1.7_date-fns@2.27.0
+  dotenv: 10.0.0
   express: 4.17.1
   lodash: 4.17.21
   mongoose: 6.1.1
+  zeromq: 6.0.0-beta.6
 
 devDependencies:
   '@types/cors': 2.8.12
@@ -304,6 +308,11 @@ packages:
     resolution: {integrity: sha512-58lmxKSA4BNyLz+HHMUzlOEpg09FV+ev6ZMe3vJihgdxzgcwZ8VoEEPmALCZG9LmqfVoNMMKpttIYTVG6uDY7A==}
     engines: {node: '>=0.3.1'}
     dev: true
+
+  /dotenv/10.0.0:
+    resolution: {integrity: sha512-rlBi9d8jpv9Sf1klPjNfFAuWDjKLwTIJJ/VxtoTwIR6hnZxcEOQCZg2oIL3MWBYw5GpUDKOEnND7LXTbIpQ03Q==}
+    engines: {node: '>=10'}
+    dev: false
 
   /dynamic-dedupe/0.3.0:
     resolution: {integrity: sha1-BuRMIj9eTpTXjvnbI6ZRXOL5YqE=}
@@ -651,6 +660,11 @@ packages:
     engines: {node: '>= 0.6'}
     dev: false
 
+  /node-gyp-build/4.3.0:
+    resolution: {integrity: sha512-iWjXZvmboq0ja1pUGULQBexmxq8CV4xBhX7VDOTbL7ZR4FOowwY/VOtRxBN/yKxmdGoIp4j5ysNT4u3S2pDQ3Q==}
+    hasBin: true
+    dev: false
+
   /normalize-path/3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
@@ -988,3 +1002,11 @@ packages:
     resolution: {integrity: sha512-Ux4ygGWsu2c7isFWe8Yu1YluJmqVhxqK2cLXNQA5AcC3QfbGNpM7fu0Y8b/z16pXLnFxZYvWhd3fhBY9DLmC6Q==}
     engines: {node: '>=6'}
     dev: true
+
+  /zeromq/6.0.0-beta.6:
+    resolution: {integrity: sha512-wLf6M7pBHijl+BRltUL2VoDpgbQcOZetiX8UzycHL8CcYFxYnRrpoG5fi3UX3+Umavz1lk4/dGaQez8qiDgr/Q==}
+    engines: {node: '>= 10.2'}
+    requiresBuild: true
+    dependencies:
+      node-gyp-build: 4.3.0
+    dev: false
