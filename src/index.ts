@@ -86,11 +86,16 @@ requestRouter.post('/request', async (req, res) => {
     });
   }
 
+  const time = utcToZonedTime(new Date(), 'Asia/Kuala_Lumpur');
+  const key = format(time, 'yyyy-MM-dd');
   const doc = new SongRequest({
     name: name,
     done: false,
+    key: key,
   });
   const out = await doc.save();
+  const payload = [key, out._id, name];
+  sock.send(payload.join(','));
   return res.send(srMapper.map(out.toObject()));
 });
 
