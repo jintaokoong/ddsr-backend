@@ -94,7 +94,7 @@ requestRouter.post('/request', async (req, res) => {
     key: key,
   });
   const out = await doc.save();
-  const payload = [key, out._id, name];
+  const payload = [out._id, name];
   sock.send(payload.join(','));
   return res.send(srMapper.map(out.toObject()));
 });
@@ -109,7 +109,15 @@ requestRouter.put('/request/:id', async (req, res) => {
   if (!doc) {
     return res.status(404).send();
   }
-  doc.done = req.body.done;
+
+  if (req.body.done !== undefined) {
+    doc.done = req.body.done;
+  }
+
+  if (req.body.details !== undefined) {
+    doc.details = req.body.details;
+  }
+
   try {
     const result = await doc.save();
     return res.status(200).send(srMapper.map(result.toObject()));
