@@ -1,3 +1,5 @@
+import { SongRequestResponse } from '../song-request';
+
 export interface HeartbeatMessage {
   type: 'heartbeat';
 }
@@ -9,7 +11,7 @@ export interface RegisterMessage {
 
 export interface UpdateMessage {
   type: 'update';
-  payload: string;
+  payload: SongRequestResponse;
 }
 
 export interface DebugMessage {

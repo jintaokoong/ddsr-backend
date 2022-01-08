@@ -12,6 +12,12 @@ export interface ISongRequest {
   updatedAt: Date;
 }
 
+export interface SongRequestResponse
+  extends Omit<ISongRequest, 'createdAt' | 'updatedAt'> {
+  createdAt: number;
+  updatedAt: number;
+}
+
 const songRequestSchema = new Schema(
   {
     name: String,
