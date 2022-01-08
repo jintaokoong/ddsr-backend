@@ -10,6 +10,7 @@ import { app, server } from './servers/servers';
 
 dotenv.config();
 const dbHost = process.env.DB_HOST ?? 'localhost';
+const port = process.env.PORT ?? 4000;
 
 app.use(cors());
 app.use(json());
@@ -32,6 +33,8 @@ connect(`mongodb://srapp:XgKaZ3SE8Ctvc5KF4nqc@${dbHost}/ddsrdb`)
   .then(() =>
     zmqSocket.bind('tcp://127.0.0.1:4200').then(() => {
       console.log('bound to port 4200');
-      return server.listen(4000, () => console.log('listening on port 4000'));
+      return server.listen(port, () =>
+        console.log(`listening on port ${port}`)
+      );
     })
   );
