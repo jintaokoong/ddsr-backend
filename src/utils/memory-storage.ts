@@ -14,6 +14,7 @@ class MemoryStorage {
       return false;
     }
     this.list = this.list.filter((i) => i !== id);
+    console.log(this.list.filter((i) => i !== id));
     return true;
   };
 }

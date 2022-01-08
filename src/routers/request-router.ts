@@ -87,7 +87,7 @@ requestRouter.post('/request', async (req, res) => {
     key: key,
   });
   const out = await doc.save();
-  memoryStorage.append(out._id);
+  memoryStorage.append(`${out._id}`);
   const payload = [out._id, name];
   zmqSocket.send(payload.join(','));
   return res.send(srMapper.map(out.toObject()));
