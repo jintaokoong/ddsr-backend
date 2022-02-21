@@ -14,6 +14,11 @@ export interface UpdateMessage {
   payload: SongRequestResponse;
 }
 
+export interface InsertMessage {
+  type: 'insert';
+  payload: SongRequestResponse;
+}
+
 export interface DebugMessage {
   type: 'debug';
 }
@@ -22,6 +27,7 @@ type Message =
   | HeartbeatMessage
   | RegisterMessage
   | DebugMessage
+  | InsertMessage
   | UpdateMessage;
 
 export default Message;

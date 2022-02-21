@@ -68,7 +68,7 @@ requestRouter.get('/request', async (_, res) => {
 });
 
 requestRouter.post('/request', async (req, res) => {
-  const { name } = req.body;
+  const { name, bot } = req.body;
   const errors = [];
   if (name === undefined) {
     errors.push('name is undefined');
@@ -87,6 +87,13 @@ requestRouter.post('/request', async (req, res) => {
     key: key,
   });
   const out = await doc.save();
+  if (bot) {
+    const message: Message = {
+      type: 'insert',
+      payload: srMapper.map(doc.toObject()),
+    };
+    wss.clients.forEach((ws) => ws.send(JSON.stringify(message)));
+  }
   memoryStorage.append(`${out._id}`);
   const payload = [out._id, name];
   zmqSocket.send(payload.join(','));
