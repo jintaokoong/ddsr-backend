@@ -6,6 +6,7 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "clean": "rimraf build/",
+    "check": "tsc --noEmit",
     "build": "npm run clean && npx tsc",
     "dev": "ts-node-dev ./src/index.ts"
   },
@@ -29,7 +30,6 @@
     "express": "^4.17.1",
     "lodash": "^4.17.21",
     "mongoose": "^6.1.1",
-    "ws": "^8.4.0",
-    "zeromq": "6.0.0-beta.6"
+    "ws": "^8.4.0"
   }
 }

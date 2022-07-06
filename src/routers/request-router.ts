@@ -7,8 +7,6 @@ import { SongRequest } from '../interfaces/song-request';
 import Message from '../interfaces/websockets/message';
 import srMapper from '../mapper/sr-mapper';
 import { wss } from '../servers/servers';
-import zmqSocket from '../servers/zmq-socket';
-import memoryStorage from '../utils/memory-storage';
 import objectUtils from '../utils/object-utils';
 
 const requestRouter = Router();
@@ -94,9 +92,6 @@ requestRouter.post('/request', async (req, res) => {
     };
     wss.clients.forEach((ws) => ws.send(JSON.stringify(message)));
   }
-  memoryStorage.append(`${out._id}`);
-  const payload = [out._id, name];
-  zmqSocket.send(payload.join(','));
   return res.send(srMapper.map(out.toObject()));
 });
 
@@ -115,22 +110,8 @@ requestRouter.put('/request/:id', async (req, res) => {
     doc.done = req.body.done;
   }
 
-  if (req.body.details !== undefined) {
-    doc.details = req.body.details;
-  }
-
   try {
     const result = await doc.save();
-
-    const success = memoryStorage.remove(req.params.id);
-    if (success) {
-      const payload: Message = {
-        type: 'update',
-        payload: srMapper.map(doc.toObject()),
-      };
-      wss.clients.forEach((ws) => ws.send(JSON.stringify(payload)));
-    }
-
     return res.status(200).send(srMapper.map(result.toObject()));
   } catch (err) {
     console.error(err);
