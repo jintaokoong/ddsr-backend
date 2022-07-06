@@ -41,13 +41,15 @@ requestRouter.get('/request', async (_, res) => {
     undefined,
     { sort: { createdAt: -1 } }
   );
-  const regularObjs = docs.map((d) => d.toObject());
+  const regularObjs: SongRequestResponse[] = docs.map((d) =>
+    srMapper.map(d.toObject())
+  );
   const grouped = lodash.groupBy(regularObjs, (o) => o.key);
   const response: DailyGrouping[] = lodash.map(
     lodash.entries(grouped),
-    (value): DailyGrouping => ({
-      key: value[0],
-      data: lodash.map(value[1], srMapper.map),
+    ([date, requests]): DailyGrouping => ({
+      key: date,
+      data: lodash.sortBy(requests, (r) => r.createdAt),
     })
   );
   return res.send(response);
