@@ -1,15 +1,16 @@
-import { addDays, isBefore, parse } from 'date-fns';
+import { addDays } from 'date-fns';
 import { format, utcToZonedTime } from 'date-fns-tz';
 import { Router } from 'express';
 import lodash from 'lodash';
 import { Config } from '../interfaces/config';
-import { SongRequest } from '../interfaces/song-request';
+import { SongRequest, SongRequestResponse } from '../interfaces/song-request';
 import Message from '../interfaces/websockets/message';
 import srMapper from '../mapper/sr-mapper';
 import { wss } from '../servers/servers';
-import objectUtils from '../utils/object-utils';
 
 const requestRouter = Router();
+
+const preferredTZ = 'Asia/Taipei';
 
 requestRouter.use(async (req, res, next) => {
   if (req.method !== 'POST') {
@@ -19,57 +20,46 @@ requestRouter.use(async (req, res, next) => {
   if (accepting && accepting.value === 'true') {
     return next();
   }
-  return res.status(400).send({ message: 'currently not accpeting' });
+  return res.status(400).send({ message: 'currently not accepting' });
 });
 
 requestRouter.delete('/request/:id', async (req, res) => {
-  if (!req.params.id) {
-    return res.status(404).send();
-  }
-  const doc = await SongRequest.findOne({ _id: req.params.id });
-  if (!doc) {
-    return res.status(404).send();
-  }
-
-  try {
-    await doc.remove();
-    return res.status(200).send();
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send();
-  }
+  return SongRequest.findOneAndRemove({ _id: req.params.id })
+    .then(() => res.status(200).send())
+    .catch(() => res.status(500).send({ message: 'internal server error' }));
 });
+
+interface DailyGrouping {
+  key: string;
+  data: SongRequestResponse[];
+}
 
 requestRouter.get('/request', async (_, res) => {
   const lastWeek = addDays(new Date(), -7);
-  const docs = await SongRequest.find({ createdAt: { $gte: lastWeek } });
-  const objs = docs.map((d) => d.toObject());
-  const grouped = lodash.groupBy(objs, (o) => {
-    const time = utcToZonedTime(o.createdAt, 'Asia/Kuala_Lumpur');
-    return format(time, 'yyyy-MM-dd');
-  });
-  const mapped = objectUtils
-    .getKeys(grouped)
-    .sort((a, b) => {
-      const f = parse(a as string, 'yyyy-MM-dd', new Date());
-      const s = parse(b as string, 'yyyy-MM-dd', new Date());
-      return isBefore(f, s) ? 1 : -1;
+  const docs = await SongRequest.find(
+    { createdAt: { $gte: lastWeek } },
+    undefined,
+    { sort: { createdAt: -1 } }
+  );
+  const regularObjs = docs.map((d) => d.toObject());
+  const grouped = lodash.groupBy(regularObjs, (o) => o.key);
+  const response: DailyGrouping[] = lodash.map(
+    lodash.entries(grouped),
+    (value): DailyGrouping => ({
+      key: value[0],
+      data: lodash.map(value[1], srMapper.map),
     })
-    .reduce(
-      (pv, cv) => ({
-        ...pv,
-        [cv]: grouped[cv].map((sr) => srMapper.map(sr)),
-      }),
-      {}
-    );
-  return res.send(mapped);
+  );
+  return res.send(response);
 });
 
 requestRouter.post('/request', async (req, res) => {
   const { name, bot } = req.body;
+
+  // validations
   const errors = [];
-  if (name === undefined) {
-    errors.push('name is undefined');
+  if (name === undefined || name.length === 0) {
+    errors.push('name is required');
   }
   if (errors.length > 0) {
     return res.status(400).send({
@@ -77,46 +67,41 @@ requestRouter.post('/request', async (req, res) => {
     });
   }
 
-  const time = utcToZonedTime(new Date(), 'Asia/Kuala_Lumpur');
+  // configure group key
+  const time = utcToZonedTime(new Date(), preferredTZ);
   const key = format(time, 'yyyy-MM-dd');
-  const doc = new SongRequest({
-    name: name,
-    done: false,
-    key: key,
-  });
-  const out = await doc.save();
-  if (bot) {
+
+  // create record
+  return SongRequest.create({ name, done: false, key }).then((doc) => {
+    const returnObj = srMapper.map(doc.toObject());
+    if (!bot) return res.send(returnObj);
+
+    // inform connected clients
     const message: Message = {
       type: 'insert',
-      payload: srMapper.map(doc.toObject()),
+      payload: returnObj,
     };
     wss.clients.forEach((ws) => ws.send(JSON.stringify(message)));
-  }
-  return res.send(srMapper.map(out.toObject()));
+    return res.send(returnObj);
+  });
 });
 
 requestRouter.put('/request/:id', async (req, res) => {
-  let doc;
-  try {
-    doc = await SongRequest.findById(req.params.id);
-  } catch (err) {
-    return res.status(404).send();
-  }
-  if (!doc) {
-    return res.status(404).send();
-  }
-
-  if (req.body.done !== undefined) {
-    doc.done = req.body.done;
-  }
-
-  try {
-    const result = await doc.save();
-    return res.status(200).send(srMapper.map(result.toObject()));
-  } catch (err) {
-    console.error(err);
-    return res.status(500).send();
-  }
+  if (req.body.done === undefined)
+    return res.status(400).send({ message: 'missing body' });
+  return SongRequest.findByIdAndUpdate(
+    req.params.id,
+    { done: req.body.done },
+    { returnDocument: 'after' }
+  )
+    .then((doc) => {
+      if (!doc) return res.status(404).send();
+      return res.send(srMapper.map(doc.toObject()));
+    })
+    .catch((error) => {
+      console.log(error);
+      return res.status(500).send({ message: 'internal server error' });
+    });
 });
 
 export default requestRouter;

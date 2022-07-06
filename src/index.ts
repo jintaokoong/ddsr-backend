@@ -1,7 +1,7 @@
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { json } from 'express';
-import { connect } from 'mongoose';
+import mongoose from 'mongoose';
 import { Config } from './interfaces/config';
 import configRouter from './routers/config-router';
 import requestRouter from './routers/request-router';
@@ -20,11 +20,29 @@ app.use(json());
 app.get('/', (_, res) => res.status(200).send({ message: 'server is up!' }));
 app.use('/api', configRouter, requestRouter);
 
-connect(connection, {
-  pass: password,
-  user: username,
-  dbName: 'ddsrdb',
-})
+const gracefulShutdown = (callback: () => void) => {
+  mongoose.connection.close(() => {
+    console.log('Gracefully disconnecting mongoose');
+    callback();
+  });
+};
+process.on('SIGINT', () => {
+  gracefulShutdown(() => {
+    process.exit(0);
+  });
+});
+process.on('SIGTERM', () => {
+  gracefulShutdown(() => {
+    process.exit(0);
+  });
+});
+
+mongoose
+  .connect(connection, {
+    pass: password,
+    user: username,
+    dbName: 'ddsrdb',
+  })
   .then(async () => {
     console.log('connected to mongodb');
     const accepting = await Config.findOne({ name: 'accepting' });
