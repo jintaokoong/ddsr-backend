@@ -6,6 +6,7 @@ import { Config } from '../interfaces/config';
 import { SongRequest, SongRequestResponse } from '../interfaces/song-request';
 import Message from '../interfaces/websockets/message';
 import srMapper from '../mapper/sr-mapper';
+import restrict from '../middlewares/restrict';
 import { wss } from '../servers/servers';
 
 const requestRouter = Router();
@@ -23,7 +24,7 @@ requestRouter.use(async (req, res, next) => {
   return res.status(400).send({ message: 'currently not accepting' });
 });
 
-requestRouter.delete('/request/:id', async (req, res) => {
+requestRouter.delete('/request/:id', restrict, async (req, res) => {
   return SongRequest.findOneAndRemove({ _id: req.params.id })
     .then(() => res.status(200).send())
     .catch(() => res.status(500).send({ message: 'internal server error' }));
@@ -55,7 +56,7 @@ requestRouter.get('/request', async (_, res) => {
   return res.send(response);
 });
 
-requestRouter.post('/request', async (req, res) => {
+requestRouter.post('/request', restrict, async (req, res) => {
   const { name, bot } = req.body;
 
   // validations
@@ -88,7 +89,7 @@ requestRouter.post('/request', async (req, res) => {
   });
 });
 
-requestRouter.put('/request/:id', async (req, res) => {
+requestRouter.put('/request/:id', restrict, async (req, res) => {
   if (req.body.done === undefined)
     return res.status(400).send({ message: 'missing body' });
   return SongRequest.findByIdAndUpdate(
